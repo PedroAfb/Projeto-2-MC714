@@ -60,11 +60,11 @@ class BullyElection:
         """
         # evita concorrência de múltiplas eleições iniciadas simultaneamente
         if not self._election_lock.acquire(blocking=False):
-            logger.debug("Eleição já em andamento; ignorando start_election")
+            logger.warning("[%s][%s] ⚠️  Eleição já em andamento — ignorando", self.id, self.clock.get())
             return
 
         try:
-            logger.info("[%s][%s] EVENT: iniciando eleição", self.id, self.clock.get())
+            logger.warning("[%s][%s] 🗳️  INICIANDO ELEIÇÃO (líder anterior: %s)", self.id, self.clock.get(), self.leader_id)
             self._ok_event.clear()
 
             # enviar ELECTION apenas para peers com id maior
@@ -72,7 +72,7 @@ class BullyElection:
             
             if not higher_peers:
                 # se não há peers com id maior, assume liderança imediatamente
-                logger.info("[%s][%s] EVENT: nenhum peer com id maior — assumindo liderança", self.id, self.clock.get())
+                logger.warning("[%s][%s] 👑 Nenhum peer com id maior — ASSUMINDO LIDERANÇA", self.id, self.clock.get())
                 self.leader_id = self.id
                 coord_msg = {"type": "COORDINATOR", "from": str(self.id), "payload": {"leader": str(self.id), "addr": self.addr}}
                 for peer_url in self.peer_map.values():
@@ -86,12 +86,12 @@ class BullyElection:
             # aguarda OK
             got_ok = self._ok_event.wait(timeout=self.ok_timeout)
             if got_ok:
-                logger.info("[%s][%s] EVENT: recebeu OK — aguardando coordenador", self.id, self.clock.get())
+                logger.info("[%s][%s] ✅ Recebeu OK — aguardando anúncio de coordenador", self.id, self.clock.get())
                 # outro nó com maior id irá anunciar coordenador; apenas aguardar
                 return
 
             # não recebeu OK — torna-se líder
-            logger.info("[%s][%s] EVENT: nenhum OK recebido — assumindo liderança", self.id, self.clock.get())
+            logger.warning("[%s][%s] 👑 Nenhum OK recebido — ASSUMINDO LIDERANÇA", self.id, self.clock.get())
             self.leader_id = self.id
             coord_msg = {"type": "COORDINATOR", "from": str(self.id), "payload": {"leader": str(self.id), "addr": self.addr}}
             for peer_url in self.peer_map.values():
@@ -111,25 +111,21 @@ class BullyElection:
 
         payload = msg.get("payload") or {}
 
-        logger.debug("[%s][%s] EVENT: recebendo %s de %s", self.id, local_ts, mtype, from_id)
-
         if mtype == "ELECTION":
             sender_addr = payload.get("addr")
-            # se o remetente tem id menor, responde OK e inicia própria eleição
+            logger.info("[%s][%s] 📩 Recebeu ELECTION de nó %s", self.id, local_ts, from_id)
+            
             if from_id is not None and from_id < self.id:
                 ok_msg = {"type": "OK", "from": str(self.id), "payload": {"addr": self.addr}}
                 if sender_addr:
-                    # responde diretamente ao remetente
+                    logger.info("[%s][%s] 📤 Enviando OK para nó %s", self.id, local_ts, from_id)
                     threading.Thread(target=self._send_message, args=(sender_addr, ok_msg), daemon=True).start()
-                # inicia a própria eleição (pode ser concorrente; start_election cuida de sincronização)
+                
+                logger.info("[%s][%s] 🗳️  Iniciando própria eleição (recebeu de nó menor)", self.id, local_ts)
                 threading.Thread(target=self.start_election, daemon=True).start()
-            else:
-                # se remetente maior ou igual, não responde
-                logger.debug("[%s][%s] EVENT: ELECTION recebido de nó >= id — ignorando resposta", self.id, local_ts)
 
         elif mtype == "OK":
-            # sinaliza que recebeu OK
-            logger.info("[%s][%s] EVENT: recebeu OK de %s", self.id, local_ts, from_id)
+            logger.info("[%s][%s] ✅ Recebeu OK de nó %s", self.id, local_ts, from_id)
             self._ok_event.set()
 
         elif mtype == "COORDINATOR":
@@ -141,14 +137,10 @@ class BullyElection:
                 pass
 
             self.leader_id = leader_id
-            logger.info("[%s][%s] EVENT: novo líder anunciado %s", self.id, local_ts, leader)
+            logger.warning("[%s][%s] 👑 NOVO LÍDER ANUNCIADO: %s", self.id, local_ts, leader)
 
         elif mtype == "PING":
-            # resposta de ping é tratada no network.send_rpc padrão; aqui apenas logamos
-            logger.debug("[%s][%s] EVENT: ping recebido de %s", self.id, local_ts, from_id)
-
-        else:
-            logger.debug("[%s][%s] EVENT: mensagem de tipo desconhecido %s", self.id, local_ts, mtype)
+            logger.debug("[%s][%s] 🏓 Ping recebido de %s", self.id, local_ts, from_id)
 
 
 __all__ = ["BullyElection"]

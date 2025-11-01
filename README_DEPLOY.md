@@ -128,29 +128,29 @@ gcloud compute instances list
 Exemplo de saída:
 ```
 NAME   ZONE           INTERNAL_IP  EXTERNAL_IP
-node1  us-central1-a  10.128.0.2   34.x.x.x
-node2  us-central1-a  10.128.0.3   35.x.x.x
-node3  us-central1-a  10.128.0.4   36.x.x.x
+node1  us-central1-a  10.158.0.2   34.x.x.x
+node2  us-central1-a  10.158.0.3   35.x.x.x
+node3  us-central1-a  10.158.0.4   36.x.x.x
 ```
 
 ### 5. Iniciar Nós (usar IPs internos)
 
-**VM node1 (id=1, IP=10.128.0.2):**
+**VM node1 (id=1, IP=10.158.0.2):**
 ```bash
-python -m src.node --id 1 --host 10.128.0.2 --port 8001 \
-  --peers 2:10.128.0.3:8002,3:10.128.0.4:8003 2>&1 | tee node1.log
+python3 -m src.node --id 1 --host 10.158.0.2 --port 8001 \
+  --peers 2:10.158.0.3:8002,3:10.158.0.4:8003 2>&1 | tee node1.log
 ```
 
-**VM node2 (id=2, IP=10.128.0.3):**
+**VM node2 (id=2, IP=10.158.0.3):**
 ```bash
-python -m src.node --id 2 --host 10.128.0.3 --port 8002 \
-  --peers 1:10.128.0.2:8001,3:10.128.0.4:8003 2>&1 | tee node2.log
+python3 -m src.node --id 2 --host 10.158.0.3 --port 8002 \
+  --peers 1:10.158.0.2:8001,3:10.158.0.4:8003 2>&1 | tee node2.log
 ```
 
-**VM node3 (id=3, IP=10.128.0.4):**
+**VM node3 (id=3, IP=10.158.0.4):**
 ```bash
-python -m src.node --id 3 --host 10.128.0.4 --port 8003 \
-  --peers 1:10.128.0.2:8001,2:10.128.0.3:8002 2>&1 | tee node3.log
+python3 -m src.node --id 3 --host 10.158.0.4 --port 8003 \
+  --peers 1:10.158.0.2:8001,2:10.158.0.3:8002 2>&1 | tee node3.log
 ```
 
 ## Testes e Experimentos
