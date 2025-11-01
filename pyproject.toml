@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "mc714-project2"
+version = "0.1.0"
+description = ""
+authors = ["Pedro Borges <p260628@dac.unicamp.br>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.120.2"
+requests = "^2.32.5"
+uvicorn = "^0.38.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
